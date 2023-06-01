@@ -1,6 +1,5 @@
 using Basket.API.Repositories.Interfaces;
 using Basket.API.Repositories;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.OpenApi.Models;
 using MassTransit;
 using Basket.API.GrpcServices;
@@ -25,15 +24,32 @@ builder.Services.AddSwaggerGen(c =>
 // General Configuration
 builder.Services.AddScoped<IBasketRepository, BasketRepository>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-//builder.Services.AddMassTransit();\
-
-
 
 // Grpc Configuration
 builder.Services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>
             (o => o.Address = new Uri(builder.Configuration["GrpcSettings:DiscountUrl"]));
 builder.Services.AddScoped<DiscountGrpcService>();
+
+// MassTransit-RabbitMQ Configuration
+builder.Services.AddMassTransit(config => {
+    config.UsingRabbitMq((ctx, cfg) => {
+        cfg.Host(builder.Configuration["EventBusSettings:HostAddress"]);
+        //cfg.UseHealthCheck(ctx);
+    });
+});
+
+//builder.Services.Configure<MassTransitHostOptions>(options =>
+//{
+//    options.WaitUntilStarted = true;
+//    options.StartTimeout = TimeSpan.FromSeconds(30);
+//    options.StopTimeout = TimeSpan.FromMinutes(1);
+//});
+
+
 builder.Services.AddControllers();
+
+
+
 
 var app = builder.Build();
 // Configure the HTTP request pipeline.
